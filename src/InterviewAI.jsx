@@ -347,6 +347,13 @@ export default function App() {
   const [phoneStatus, setPhoneStatus] = useState("waiting"); // waiting | in_progress | completed
   const [copied, setCopied] = useState(false);
 
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRole, setFilterRole] = useState("");
+  const [filterMinScore, setFilterMinScore] = useState(0);
+  const [filterMaxScore, setFilterMaxScore] = useState(10);
+  const [sortBy, setSortBy] = useState("date"); // date, score, name
+
   const timerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -912,33 +919,76 @@ export default function App() {
   };
 
   // ─── RENDER: CANDIDATES ───────────────────────────────────────────────────
-  const renderCandidates = () => (
-    <div style={{ maxWidth:860 }}>
-      <div className="page-header">
-        <div><h1>All Candidates</h1><p>{candidates.length} interviewed</p></div>
-        <button className="btn btn-primary" onClick={resetSetup}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg> New Interview</button>
+  const renderCandidates = () => {
+    // Filter and search logic
+    let filtered = candidates.filter(c => {
+      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRole = !filterRole || c.role === filterRole;
+      const matchesScore = c.overall >= filterMinScore && c.overall <= filterMaxScore;
+      return matchesSearch && matchesRole && matchesScore;
+    });
+
+    // Sort logic
+    if (sortBy === "score") filtered.sort((a, b) => b.overall - a.overall);
+    else if (sortBy === "name") filtered.sort((a, b) => a.name.localeCompare(b.name));
+    else filtered.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt)); // date
+
+    const uniqueRoles = [...new Set(candidates.map(c => c.role))];
+
+    return (
+      <div style={{ maxWidth: 1000 }}>
+        <div className="page-header">
+          <div><h1>All Candidates</h1><p>{filtered.length} of {candidates.length} interviewed</p></div>
+          <button className="btn btn-primary" onClick={resetSetup}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg> New Interview</button>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="card" style={{ marginBottom: 20, padding: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+            <input type="text" placeholder="Search by name..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 13.5 }} />
+            <select value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 13.5, appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f99' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 }}>
+              <option value="">All Roles</option>
+              {uniqueRoles.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="number" min="0" max="10" value={filterMinScore} onChange={e => setFilterMinScore(Number(e.target.value))} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 12, flex: 1 }} placeholder="Min" />
+              <span style={{ color: "var(--text-muted)" }}>-</span>
+              <input type="number" min="0" max="10" value={filterMaxScore} onChange={e => setFilterMaxScore(Number(e.target.value))} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 12, flex: 1 }} placeholder="Max" />
+            </div>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 13.5, appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f99' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 }}>
+              <option value="date">Sort: Recent</option>
+              <option value="score">Sort: Score</option>
+              <option value="name">Sort: Name</option>
+            </select>
+          </div>
+          {(searchQuery || filterRole || filterMinScore > 0 || filterMaxScore < 10) && (
+            <button onClick={() => { setSearchQuery(""); setFilterRole(""); setFilterMinScore(0); setFilterMaxScore(10); }} style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 12.5, fontWeight: 500 }}>Clear filters</button>
+          )}
+        </div>
+
+        {/* Candidates Table */}
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: 48, textAlign: "center", color: "var(--text-muted)" }}><div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div><p>{candidates.length === 0 ? "No candidates yet." : "No candidates match your filters."}</p></div>
+          ) : (
+            <table className="candidates-table">
+              <thead><tr><th>Candidate</th><th>Role</th><th>Level</th><th>Mode</th><th>Score</th><th>Status</th></tr></thead>
+              <tbody>{filtered.map(c => (
+                <tr key={c.id} onClick={() => { setCurrentCandidate(c); setView("results"); }}>
+                  <td style={{ fontWeight: 500 }}>{c.name}</td>
+                  <td style={{ color: "var(--text-muted)" }}>{c.role}</td>
+                  <td style={{ color: "var(--text-muted)" }}>{c.experience}</td>
+                  <td><span className={`status-pill ${c.mode === "phone" ? "phone" : "chat"}`}><span className="status-dot"/>{c.mode === "phone" ? "📞 Phone" : "💬 Chat"}</span></td>
+                  <td><div className="mini-score"><span className="val">{c.overall}</span><div className="mini-bar-track"><div className="mini-bar-fill" style={{ width: `${(c.overall / 10) * 100}%` }} /></div></div></td>
+                  <td><span className="status-pill completed"><span className="status-dot"/> Completed</span></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          )}
+        </div>
       </div>
-      <div className="card" style={{ padding:0, overflow:"hidden" }}>
-        {candidates.length === 0 ? (
-          <div style={{ padding:48, textAlign:"center", color:"var(--text-muted)" }}><div style={{ fontSize:36, marginBottom:12 }}>📋</div><p>No candidates yet.</p></div>
-        ) : (
-          <table className="candidates-table">
-            <thead><tr><th>Candidate</th><th>Role</th><th>Level</th><th>Mode</th><th>Score</th><th>Status</th></tr></thead>
-            <tbody>{[...candidates].sort((a,b) => b.overall - a.overall).map(c => (
-              <tr key={c.id} onClick={() => { setCurrentCandidate(c); setView("results"); }}>
-                <td style={{ fontWeight:500 }}>{c.name}</td>
-                <td style={{ color:"var(--text-muted)" }}>{c.role}</td>
-                <td style={{ color:"var(--text-muted)" }}>{c.experience}</td>
-                <td><span className={`status-pill ${c.mode === "phone" ? "phone" : "chat"}`}><span className="status-dot"/>{c.mode === "phone" ? "📞 Phone" : "💬 Chat"}</span></td>
-                <td><div className="mini-score"><span className="val">{c.overall}</span><div className="mini-bar-track"><div className="mini-bar-fill" style={{ width:`${(c.overall/10)*100}%` }}/></div></div></td>
-                <td><span className="status-pill completed"><span className="status-dot"/> Completed</span></td>
-              </tr>
-            ))}</tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
   // ─── NAV ──────────────────────────────────────────────────────────────────
   const navItems = [
