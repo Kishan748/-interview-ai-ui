@@ -262,7 +262,7 @@ const styles = `
 `;
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const ROLES = ["Frontend Engineer","Backend Engineer","Full Stack Engineer","DevOps Engineer","Data Engineer","ML Engineer","Mobile Developer","QA Engineer","Product Manager","UI/UX Designer","Delivery Lead","Practice Lead","Dental Assistant","Software Engineer","Automation Test Lead","Other"];
+const ROLES = ["Frontend Engineer","Backend Engineer","Full Stack Engineer","DevOps Engineer","Data Engineer","ML Engineer","Mobile Developer","QA Engineer","Software Engineer","Automation Test Lead","Senior Software Engineer","Cloud Architect","Solutions Architect","Security Engineer","Network Engineer","Database Administrator","Systems Administrator","Business Analyst","Data Analyst","Product Manager","Project Manager","Delivery Lead","Practice Lead","UI/UX Designer","Tech Lead","Other"];
 const EXPERIENCE_LEVELS = ["Junior (0-2 yrs)","Mid (2-4 yrs)","Senior (4-7 yrs)","Lead (7+ yrs)"];
 const DURATION_OPTIONS = [{ label:"20 mins", value:20 },{ label:"25 mins", value:25 },{ label:"30 mins", value:30 }];
 const TOPIC_AREAS = ["Introduction & Background","Technical Depth","Problem Solving","Experience & Projects","Culture & Teamwork","Wrap Up"];
