@@ -374,6 +374,12 @@ ONLY valid JSON: { "reply": "<response>", "topicArea": "<one of: Introduction & 
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
+  // ─── Access Control ───
+  const HARDCODED_ACCESS_CODE = "0001";
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [accessCode, setAccessCode] = useState("");
+  const [codeError, setCodeError] = useState("");
+
   const [view, setView] = useState("setup");
   const [candidates, setCandidates] = useState([]);
   const [currentCandidate, setCurrentCandidate] = useState(null);
@@ -632,6 +638,18 @@ export default function App() {
       const updated = [...candidates, candidate];
       setCandidates(updated);
       localStorage.setItem("interviewai_candidates", JSON.stringify(updated));
+    }
+  };
+
+  // ── Access Code Handler ──
+  const handleAccessCodeSubmit = () => {
+    if (accessCode === HARDCODED_ACCESS_CODE) {
+      setIsAuthenticated(true);
+      setAccessCode("");
+      setCodeError("");
+    } else {
+      setCodeError("Invalid access code. Please try again.");
+      setAccessCode("");
     }
   };
 
@@ -1504,6 +1522,91 @@ export default function App() {
     </div>
   );
 
+  // ─── RENDER: ACCESS CODE ──────────────────────────────────────────────────
+  const renderAccessCode = () => {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          background: "linear-gradient(135deg, var(--accent), #8b5cf6)",
+        }}
+      >
+        <div
+          style={{
+            background: "var(--surface)",
+            padding: "40px",
+            borderRadius: "var(--radius)",
+            border: "1px solid var(--border)",
+            maxWidth: "400px",
+            textAlign: "center",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          }}
+        >
+          <h1
+            style={{ marginBottom: "10px", color: "var(--text)", fontSize: "32px" }}
+          >
+            🤖 InterviewAI
+          </h1>
+          <p style={{ color: "var(--text-muted)", marginBottom: "30px", fontSize: "14px" }}>
+            Enter your access code to continue
+          </p>
+
+          <input
+            type="password"
+            placeholder="Access Code"
+            value={accessCode}
+            onChange={(e) => {
+              setAccessCode(e.target.value);
+              setCodeError("");
+            }}
+            onKeyDown={(e) => e.key === "Enter" && handleAccessCodeSubmit()}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              color: "var(--text)",
+              marginBottom: "15px",
+              fontSize: "16px",
+              boxSizing: "border-box",
+            }}
+          />
+
+          <button
+            onClick={handleAccessCodeSubmit}
+            style={{
+              width: "100%",
+              padding: "12px",
+              background: "var(--accent)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "600",
+              marginBottom: codeError ? "15px" : "0",
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => (e.target.style.opacity = "0.9")}
+            onMouseLeave={(e) => (e.target.style.opacity = "1")}
+          >
+            Submit
+          </button>
+
+          {codeError && (
+            <p style={{ color: "#ef4444", marginTop: "15px", fontSize: "14px" }}>
+              ❌ {codeError}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // ─── RENDER: RESULTS ──────────────────────────────────────────────────────
   const renderResults = () => {
     const s = currentCandidate?.scores;
@@ -2007,36 +2110,40 @@ export default function App() {
   return (
     <>
       <style>{styles}</style>
-      <div className="app-shell">
-        <div className="sidebar">
-          <div className="sidebar-logo">
-            <div className="logo-icon">🤖</div>
-            <div className="logo-text">
-              Interview<span>AI</span>
+      {!isAuthenticated ? (
+        renderAccessCode()
+      ) : (
+        <div className="app-shell">
+          <div className="sidebar">
+            <div className="sidebar-logo">
+              <div className="logo-icon">🤖</div>
+              <div className="logo-text">
+                Interview<span>AI</span>
+              </div>
             </div>
+            <nav className="sidebar-nav">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  className={`nav-item ${getActiveNav() === item.id ? "active" : ""}`}
+                  onClick={() =>
+                    item.id === "setup" ? resetSetup() : setView(item.id)
+                  }
+                >
+                  {item.icon} {item.label}
+                </button>
+              ))}
+            </nav>
           </div>
-          <nav className="sidebar-nav">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                className={`nav-item ${getActiveNav() === item.id ? "active" : ""}`}
-                onClick={() =>
-                  item.id === "setup" ? resetSetup() : setView(item.id)
-                }
-              >
-                {item.icon} {item.label}
-              </button>
-            ))}
-          </nav>
+          <div className="main-content">
+            {view === "setup" && renderSetup()}
+            {view === "interview" && renderInterview()}
+            {view === "phone-waiting" && renderPhoneWaiting()}
+            {view === "results" && renderResults()}
+            {view === "candidates" && renderCandidates()}
+          </div>
         </div>
-        <div className="main-content">
-          {view === "setup" && renderSetup()}
-          {view === "interview" && renderInterview()}
-          {view === "phone-waiting" && renderPhoneWaiting()}
-          {view === "results" && renderResults()}
-          {view === "candidates" && renderCandidates()}
-        </div>
-      </div>
+      )}
       {loading && (
         <div className="loading-overlay">
           <div className="loading-spinner" />
