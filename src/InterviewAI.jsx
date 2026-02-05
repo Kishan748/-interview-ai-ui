@@ -498,44 +498,55 @@ export default function App() {
 
       // 1. Fetch completed sessions from 'sessions' collection
       try {
+        console.log("🔍 Loading from 'sessions' collection...");
         const q = query(
           collection(db, "sessions"),
           where("status", "==", "completed"),
         );
         const snapshot = await getDocs(q);
 
+        console.log(
+          `Found ${snapshot.docs.length} completed sessions in 'sessions'`,
+        );
+
         snapshot.docs.forEach((doc) => {
           const data = doc.data();
-          if (data.scores && data.overall_score) {
-            const candidate = {
-              id: doc.id,
-              name: data.candidate_name,
-              role: data.role,
-              experience: data.experience_level,
-              scores: data.scores,
-              overall: data.overall_score,
-              completedAt: data.scored_at
-                ? new Date(data.scored_at)
-                : new Date(data.completed_at),
-              mode: data.phone_number ? "phone" : "chat",
-              transcript: data.transcript || [],
-              source: "sessions",
-            };
-            candidateList.push(candidate);
-            seenIds.add(doc.id);
-          }
+          // Include ALL completed sessions, scored or not
+          const candidate = {
+            id: doc.id,
+            name: data.candidate_name || "Unknown",
+            role: data.role || "Unknown",
+            experience: data.experience_level || "Unknown",
+            scores: data.scores || null,
+            overall: data.overall_score || null,
+            completedAt: data.scored_at
+              ? new Date(data.scored_at)
+              : data.completed_at
+                ? new Date(data.completed_at)
+                : new Date(),
+            mode: data.phone_number ? "phone" : "chat",
+            transcript: data.transcript || [],
+            source: "sessions",
+          };
+          candidateList.push(candidate);
+          seenIds.add(doc.id);
         });
         console.log(
           `✅ Loaded ${candidateList.length} candidates from 'sessions' collection`,
         );
       } catch (err) {
-        console.error("Error loading from 'sessions' collection:", err);
+        console.error("❌ Error loading from 'sessions' collection:", err);
       }
 
       // 2. Fetch scored interviews from 'scored_interviews' collection
       try {
+        console.log("🔍 Loading from 'scored_interviews' collection...");
         const q = query(collection(db, "scored_interviews"));
         const snapshot = await getDocs(q);
+
+        console.log(
+          `Found ${snapshot.docs.length} interviews in 'scored_interviews'`,
+        );
 
         snapshot.docs.forEach((doc) => {
           const data = doc.data();
@@ -543,11 +554,11 @@ export default function App() {
           if (!seenIds.has(doc.id)) {
             const candidate = {
               id: doc.id,
-              name: data.name,
-              role: data.role,
-              experience: data.experience,
-              scores: data.scores,
-              overall: data.overall,
+              name: data.name || "Unknown",
+              role: data.role || "Unknown",
+              experience: data.experience || "Unknown",
+              scores: data.scores || null,
+              overall: data.overall || null,
               completedAt: data.completedAt
                 ? new Date(data.completedAt)
                 : new Date(data.created_at),
@@ -560,11 +571,11 @@ export default function App() {
           }
         });
         console.log(
-          `✅ Loaded additional candidates from 'scored_interviews' collection (total: ${candidateList.length})`,
+          `✅ Total candidates now: ${candidateList.length}`,
         );
       } catch (err) {
         console.error(
-          "Error loading from 'scored_interviews' collection:",
+          "❌ Error loading from 'scored_interviews' collection:",
           err,
         );
       }
