@@ -262,10 +262,53 @@ const styles = `
 `;
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const ROLES = ["Frontend Engineer","Backend Engineer","Full Stack Engineer","DevOps Engineer","Data Engineer","ML Engineer","Mobile Developer","QA Engineer","Software Engineer","Automation Test Lead","Senior Software Engineer","Cloud Architect","Solutions Architect","Security Engineer","Network Engineer","Database Administrator","Systems Administrator","Business Analyst","Data Analyst","Product Manager","Project Manager","Delivery Lead","Practice Lead","UI/UX Designer","Tech Lead","Other"];
-const EXPERIENCE_LEVELS = ["Junior (0-2 yrs)","Mid (2-4 yrs)","Senior (4-7 yrs)","Lead (7+ yrs)"];
-const DURATION_OPTIONS = [{ label:"20 mins", value:20 },{ label:"25 mins", value:25 },{ label:"30 mins", value:30 }];
-const TOPIC_AREAS = ["Introduction & Background","Technical Depth","Problem Solving","Experience & Projects","Culture & Teamwork","Wrap Up"];
+const ROLES = [
+  "Frontend Engineer",
+  "Backend Engineer",
+  "Full Stack Engineer",
+  "DevOps Engineer",
+  "Data Engineer",
+  "ML Engineer",
+  "Mobile Developer",
+  "QA Engineer",
+  "Software Engineer",
+  "Automation Test Lead",
+  "Senior Software Engineer",
+  "Cloud Architect",
+  "Solutions Architect",
+  "Security Engineer",
+  "Network Engineer",
+  "Database Administrator",
+  "Systems Administrator",
+  "Business Analyst",
+  "Data Analyst",
+  "Product Manager",
+  "Project Manager",
+  "Delivery Lead",
+  "Practice Lead",
+  "UI/UX Designer",
+  "Tech Lead",
+  "Other",
+];
+const EXPERIENCE_LEVELS = [
+  "Junior (0-2 yrs)",
+  "Mid (2-4 yrs)",
+  "Senior (4-7 yrs)",
+  "Lead (7+ yrs)",
+];
+const DURATION_OPTIONS = [
+  { label: "20 mins", value: 20 },
+  { label: "25 mins", value: 25 },
+  { label: "30 mins", value: 30 },
+];
+const TOPIC_AREAS = [
+  "Introduction & Background",
+  "Technical Depth",
+  "Problem Solving",
+  "Experience & Projects",
+  "Culture & Teamwork",
+  "Wrap Up",
+];
 const BACKEND_URL = "https://interview-backend-production-0688.up.railway.app";
 const TWILIO_NUMBER = "+61 2 3820 5224";
 
@@ -274,21 +317,38 @@ async function callClaude(messages, systemPrompt) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: 1000, system: systemPrompt, messages })
+    body: JSON.stringify({
+      model: "claude-sonnet-4-5-20250929",
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages,
+    }),
   });
   const data = await res.json();
   return data.content?.[0]?.text || "";
 }
 
 // ─── SYSTEM PROMPT ────────────────────────────────────────────────────────────
-function buildSystemPrompt(role, experience, jd, resumeText, candidateName, durationMins, timeLeftSecs) {
+function buildSystemPrompt(
+  role,
+  experience,
+  jd,
+  resumeText,
+  candidateName,
+  durationMins,
+  timeLeftSecs,
+) {
   const mins = Math.floor(timeLeftSecs / 60);
   const secs = timeLeftSecs % 60;
   let contextSection = "";
-  if (jd && resumeText) contextSection = `━━━ CONTEXT ━━━\nJob Description:\n${jd}\n\nResume:\n${resumeText}\n\nUse both to ask relevant, specific questions.`;
-  else if (jd) contextSection = `━━━ JOB DESCRIPTION ━━━\n${jd}\n\nTailor questions to this role.`;
-  else if (resumeText) contextSection = `━━━ RESUME ━━━\n${resumeText}\n\nAsk about their actual experience.`;
-  else contextSection = `━━━ CONTEXT ━━━\nNo JD or Resume. Focus on general questions for a ${experience} ${role}.`;
+  if (jd && resumeText)
+    contextSection = `━━━ CONTEXT ━━━\nJob Description:\n${jd}\n\nResume:\n${resumeText}\n\nUse both to ask relevant, specific questions.`;
+  else if (jd)
+    contextSection = `━━━ JOB DESCRIPTION ━━━\n${jd}\n\nTailor questions to this role.`;
+  else if (resumeText)
+    contextSection = `━━━ RESUME ━━━\n${resumeText}\n\nAsk about their actual experience.`;
+  else
+    contextSection = `━━━ CONTEXT ━━━\nNo JD or Resume. Focus on general questions for a ${experience} ${role}.`;
 
   return `You are Sarah, a warm recruiter interviewing ${candidateName} for a ${experience} ${role} position.
 
@@ -362,21 +422,35 @@ export default function App() {
   const phonePollerRef = useRef(null);
   const phoneStatusRef = useRef("waiting");
 
-  useEffect(() => { timeLeftRef.current = timeLeft; }, [timeLeft]);
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
-  useEffect(() => { phoneStatusRef.current = phoneStatus; }, [phoneStatus]);
+  useEffect(() => {
+    timeLeftRef.current = timeLeft;
+  }, [timeLeft]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+  useEffect(() => {
+    phoneStatusRef.current = phoneStatus;
+  }, [phoneStatus]);
 
   // ── Chat timer ──
   useEffect(() => {
-    if (view !== "interview" || interviewDone || interviewMode !== "chat") return;
+    if (view !== "interview" || interviewDone || interviewMode !== "chat")
+      return;
     timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
           if (!doneRef.current) {
             doneRef.current = true;
             setInterviewDone(true);
-            setMessages(m => [...m, { role: "ai", text: "Oh looks like we've hit our time! Thanks so much for chatting — it was great talking to you. Have an awesome rest of your day!", time: new Date() }]);
+            setMessages((m) => [
+              ...m,
+              {
+                role: "ai",
+                text: "Oh looks like we've hit our time! Thanks so much for chatting — it was great talking to you. Have an awesome rest of your day!",
+                time: new Date(),
+              },
+            ]);
           }
           return 0;
         }
@@ -393,12 +467,21 @@ export default function App() {
       try {
         const res = await fetch(`${BACKEND_URL}/api/session/${phoneSessionId}`);
         const session = await res.json();
-        if (session.status === "in_progress" && phoneStatusRef.current === "waiting") setPhoneStatus("in_progress");
-        if (session.status === "completed" && phoneStatusRef.current !== "completed") {
+        if (
+          session.status === "in_progress" &&
+          phoneStatusRef.current === "waiting"
+        )
+          setPhoneStatus("in_progress");
+        if (
+          session.status === "completed" &&
+          phoneStatusRef.current !== "completed"
+        ) {
           setPhoneStatus("completed");
           clearInterval(phonePollerRef.current);
         }
-      } catch { /* retry next tick */ }
+      } catch {
+        /* retry next tick */
+      }
     }, 3000);
     return () => clearInterval(phonePollerRef.current);
   }, [view, phoneSessionId]);
@@ -410,32 +493,100 @@ export default function App() {
 
   const loadCandidates = async () => {
     try {
-      // Fetch completed sessions from Firestore
-      const q = query(collection(db, 'sessions'), where('status', '==', 'completed'));
-      const snapshot = await getDocs(q);
+      const candidateList = [];
+      const seenIds = new Set();
 
-      const candidateList = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          name: data.candidate_name,
-          role: data.role,
-          experience: data.experience_level,
-          scores: data.scores,
-          overall: data.overall_score,
-          completedAt: data.scored_at ? new Date(data.scored_at) : new Date(data.completed_at),
-          mode: data.phone_number ? 'phone' : 'chat',
-          transcript: data.transcript || []
-        };
-      });
+      // 1. Fetch completed sessions from 'sessions' collection
+      try {
+        const q = query(
+          collection(db, "sessions"),
+          where("status", "==", "completed"),
+        );
+        const snapshot = await getDocs(q);
 
-      setCandidates(candidateList);
-      // Also update localStorage for quick access
-      localStorage.setItem('interviewai_candidates', JSON.stringify(candidateList));
+        snapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          if (data.scores && data.overall_score) {
+            const candidate = {
+              id: doc.id,
+              name: data.candidate_name,
+              role: data.role,
+              experience: data.experience_level,
+              scores: data.scores,
+              overall: data.overall_score,
+              completedAt: data.scored_at
+                ? new Date(data.scored_at)
+                : new Date(data.completed_at),
+              mode: data.phone_number ? "phone" : "chat",
+              transcript: data.transcript || [],
+              source: "sessions",
+            };
+            candidateList.push(candidate);
+            seenIds.add(doc.id);
+          }
+        });
+        console.log(
+          `✅ Loaded ${candidateList.length} candidates from 'sessions' collection`,
+        );
+      } catch (err) {
+        console.error("Error loading from 'sessions' collection:", err);
+      }
+
+      // 2. Fetch scored interviews from 'scored_interviews' collection
+      try {
+        const q = query(collection(db, "scored_interviews"));
+        const snapshot = await getDocs(q);
+
+        snapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          // Only add if not already added from sessions collection
+          if (!seenIds.has(doc.id)) {
+            const candidate = {
+              id: doc.id,
+              name: data.name,
+              role: data.role,
+              experience: data.experience,
+              scores: data.scores,
+              overall: data.overall,
+              completedAt: data.completedAt
+                ? new Date(data.completedAt)
+                : new Date(data.created_at),
+              mode: data.mode || "chat",
+              transcript: data.transcript || [],
+              source: "scored_interviews",
+            };
+            candidateList.push(candidate);
+            seenIds.add(doc.id);
+          }
+        });
+        console.log(
+          `✅ Loaded additional candidates from 'scored_interviews' collection (total: ${candidateList.length})`,
+        );
+      } catch (err) {
+        console.error(
+          "Error loading from 'scored_interviews' collection:",
+          err,
+        );
+      }
+
+      // 3. Only include candidates that have scores
+      const scoredCandidates = candidateList.filter(
+        (c) => c.scores && c.overall,
+      );
+      setCandidates(scoredCandidates);
+
+      // Update localStorage for quick access
+      localStorage.setItem(
+        "interviewai_candidates",
+        JSON.stringify(scoredCandidates),
+      );
+      console.log(
+        `📊 Total candidates with scores: ${scoredCandidates.length}`,
+      );
     } catch (err) {
       console.error("Error loading candidates from Firestore:", err);
       // Fallback to localStorage
-      const stored = localStorage.getItem('interviewai_candidates');
+      const stored = localStorage.getItem("interviewai_candidates");
       if (stored) {
         try {
           setCandidates(JSON.parse(stored));
@@ -447,21 +598,21 @@ export default function App() {
   const saveCandidate = async (candidate) => {
     try {
       // Save to Firestore
-      await addDoc(collection(db, 'scored_interviews'), {
+      await addDoc(collection(db, "scored_interviews"), {
         ...candidate,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       });
 
       // Update local state
       const updated = [...candidates, candidate];
       setCandidates(updated);
-      localStorage.setItem('interviewai_candidates', JSON.stringify(updated));
+      localStorage.setItem("interviewai_candidates", JSON.stringify(updated));
     } catch (err) {
       console.error("Error saving candidate to Firestore:", err);
       // Still update local state even if Firestore fails
       const updated = [...candidates, candidate];
       setCandidates(updated);
-      localStorage.setItem('interviewai_candidates', JSON.stringify(updated));
+      localStorage.setItem("interviewai_candidates", JSON.stringify(updated));
     }
   };
 
@@ -478,48 +629,116 @@ export default function App() {
       setResumeText(`[Resume: ${file.name}]`);
     }
   };
-  const clearResume = () => { setResumeFile(null); setResumeText(""); };
+  const clearResume = () => {
+    setResumeFile(null);
+    setResumeText("");
+  };
 
   // ── Chat: AI reply ──
-  const getAIReply = useCallback(async (updatedApiMsgs) => {
-    setIsTyping(true);
-    try {
-      const raw = await callClaude(updatedApiMsgs, buildSystemPrompt(role, experience, jd, resumeText, candidateName, duration, timeLeftRef.current));
-      let clean = raw.trim().replace(/```json\s*/g, "").replace(/```\s*/g, "");
-      const m = clean.match(/\{[\s\S]*\}/);
-      if (m) clean = m[0];
-      const parsed = JSON.parse(clean);
-      if (!parsed.reply) throw new Error("No reply");
-      setIsTyping(false);
-      setMessages(prev => [...prev, { role: "ai", text: parsed.reply, time: new Date() }]);
-      setApiMessages([...updatedApiMsgs, { role: "assistant", content: parsed.reply }]);
-      const idx = TOPIC_AREAS.indexOf(parsed.topicArea);
-      if (idx >= 0) { setCurrentTopic(idx); setTopicHistory(prev => prev.includes(idx) ? prev : [...prev, idx]); }
-      if (parsed.interviewComplete) { doneRef.current = true; setInterviewDone(true); clearInterval(timerRef.current); }
-    } catch {
-      setIsTyping(false);
-      setMessages(prev => [...prev, { role: "ai", text: "Could you expand on that a bit?", time: new Date() }]);
-    }
-  }, [role, experience, jd, resumeText, candidateName, duration]);
+  const getAIReply = useCallback(
+    async (updatedApiMsgs) => {
+      setIsTyping(true);
+      try {
+        const raw = await callClaude(
+          updatedApiMsgs,
+          buildSystemPrompt(
+            role,
+            experience,
+            jd,
+            resumeText,
+            candidateName,
+            duration,
+            timeLeftRef.current,
+          ),
+        );
+        let clean = raw
+          .trim()
+          .replace(/```json\s*/g, "")
+          .replace(/```\s*/g, "");
+        const m = clean.match(/\{[\s\S]*\}/);
+        if (m) clean = m[0];
+        const parsed = JSON.parse(clean);
+        if (!parsed.reply) throw new Error("No reply");
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          { role: "ai", text: parsed.reply, time: new Date() },
+        ]);
+        setApiMessages([
+          ...updatedApiMsgs,
+          { role: "assistant", content: parsed.reply },
+        ]);
+        const idx = TOPIC_AREAS.indexOf(parsed.topicArea);
+        if (idx >= 0) {
+          setCurrentTopic(idx);
+          setTopicHistory((prev) =>
+            prev.includes(idx) ? prev : [...prev, idx],
+          );
+        }
+        if (parsed.interviewComplete) {
+          doneRef.current = true;
+          setInterviewDone(true);
+          clearInterval(timerRef.current);
+        }
+      } catch {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "ai",
+            text: "Could you expand on that a bit?",
+            time: new Date(),
+          },
+        ]);
+      }
+    },
+    [role, experience, jd, resumeText, candidateName, duration],
+  );
 
   // ── Start Chat ──
   const startChatInterview = async () => {
-    setLoading(true); setLoadingText("Setting up interview...");
-    setMessages([]); setApiMessages([]); setTimeLeft(duration * 60);
+    setLoading(true);
+    setLoadingText("Setting up interview...");
+    setMessages([]);
+    setApiMessages([]);
+    setTimeLeft(duration * 60);
     timeLeftRef.current = duration * 60;
-    setInterviewDone(false); doneRef.current = false;
-    setCurrentTopic(0); setTopicHistory([0]);
-    setView("interview"); setLoading(false); setIsTyping(true);
-    const kickoff = [{ role: "user", content: "Start with warm casual small talk." }];
+    setInterviewDone(false);
+    doneRef.current = false;
+    setCurrentTopic(0);
+    setTopicHistory([0]);
+    setView("interview");
+    setLoading(false);
+    setIsTyping(true);
+    const kickoff = [
+      { role: "user", content: "Start with warm casual small talk." },
+    ];
     try {
-      const raw = await callClaude(kickoff, buildSystemPrompt(role, experience, jd, resumeText, candidateName, duration, duration * 60));
+      const raw = await callClaude(
+        kickoff,
+        buildSystemPrompt(
+          role,
+          experience,
+          jd,
+          resumeText,
+          candidateName,
+          duration,
+          duration * 60,
+        ),
+      );
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       setIsTyping(false);
       setMessages([{ role: "ai", text: parsed.reply, time: new Date() }]);
-      setApiMessages([kickoff[0], { role: "assistant", content: parsed.reply }]);
+      setApiMessages([
+        kickoff[0],
+        { role: "assistant", content: parsed.reply },
+      ]);
       const idx = TOPIC_AREAS.indexOf(parsed.topicArea);
-      if (idx >= 0) { setCurrentTopic(idx); setTopicHistory([idx]); }
+      if (idx >= 0) {
+        setCurrentTopic(idx);
+        setTopicHistory([idx]);
+      }
     } catch {
       setIsTyping(false);
       const fb = `Hey ${candidateName}! Thanks for jumping on — how's your day going?`;
@@ -531,18 +750,19 @@ export default function App() {
 
   // ── Start Phone ──
   const startPhoneInterview = async () => {
-    setLoading(true); setLoadingText("Creating interview session...");
+    setLoading(true);
+    setLoadingText("Creating interview session...");
     try {
       const res = await fetch(`${BACKEND_URL}/api/create-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          candidate_name: candidateName, 
-          role: role === "Other" ? customRole : role, 
-          experience_level: experience, 
-          job_description: jd, 
+        body: JSON.stringify({
+          candidate_name: candidateName,
+          role: role === "Other" ? customRole : role,
+          experience_level: experience,
+          job_description: jd,
           resume: resumeText,
-          phone_number: phoneNumber 
+          phone_number: phoneNumber,
         }),
       });
       const data = await res.json();
@@ -557,13 +777,14 @@ export default function App() {
 
   // ── Score ──
   const scoreInterview = async (mode) => {
-    setLoading(true); setLoadingText("Scoring the interview...");
+    setLoading(true);
+    setLoadingText("Scoring the interview...");
     try {
       const scorePayload = {
         mode,
         candidate_name: candidateName,
         role: role === "Other" ? customRole : role,
-        experience_level: experience
+        experience_level: experience,
       };
 
       // Add mode-specific data
@@ -574,11 +795,14 @@ export default function App() {
       }
 
       // Call backend endpoint for all modes (no CORS!)
-      console.log("Calling backend /api/score-interview with payload:", scorePayload);
+      console.log(
+        "Calling backend /api/score-interview with payload:",
+        scorePayload,
+      );
       const scoreRes = await fetch(`${BACKEND_URL}/api/score-interview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scorePayload)
+        body: JSON.stringify(scorePayload),
       });
 
       console.log("Backend response status:", scoreRes.status);
@@ -586,7 +810,9 @@ export default function App() {
       if (!scoreRes.ok) {
         const errorText = await scoreRes.text();
         console.error("Backend error response:", errorText);
-        throw new Error(`Scoring failed: ${scoreRes.statusText} - ${errorText}`);
+        throw new Error(
+          `Scoring failed: ${scoreRes.statusText} - ${errorText}`,
+        );
       }
 
       const scoreData = await scoreRes.json();
@@ -596,10 +822,10 @@ export default function App() {
       let transcriptMessages = [];
       if (mode === "phone" && scoreData.transcript) {
         // Phone transcripts come from ElevenLabs format
-        transcriptMessages = (scoreData.transcript || []).map(t => ({
+        transcriptMessages = (scoreData.transcript || []).map((t) => ({
           role: t.role === "agent" ? "ai" : "candidate",
           text: t.message || "",
-          time: new Date()
+          time: new Date(),
         }));
       } else if (mode === "chat" && scoreData.transcript) {
         // Chat transcripts are already in our format
@@ -615,7 +841,7 @@ export default function App() {
         overall: scoreData.overall,
         completedAt: new Date(),
         mode,
-        transcript: transcriptMessages
+        transcript: transcriptMessages,
       };
 
       saveCandidate(result);
@@ -630,30 +856,69 @@ export default function App() {
 
   const sendMessage = async () => {
     if (!inputVal.trim() || interviewDone || isTyping) return;
-    const msg = inputVal.trim(); setInputVal("");
-    setMessages(prev => [...prev, { role: "candidate", text: msg, time: new Date() }]);
+    const msg = inputVal.trim();
+    setInputVal("");
+    setMessages((prev) => [
+      ...prev,
+      { role: "candidate", text: msg, time: new Date() },
+    ]);
     const updated = [...apiMessages, { role: "user", content: msg }];
     setApiMessages(updated);
     await getAIReply(updated);
   };
 
-  const copyNumber = () => { navigator.clipboard.writeText("+61238205224"); setCopied(true); setTimeout(() => setCopied(false), 2000); };
-  const formatTime = s => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
-  const resetSetup = () => { setRole(""); setExperience(""); setCandidateName(""); setJd(""); clearResume(); setView("setup"); };
+  const copyNumber = () => {
+    navigator.clipboard.writeText("+61238205224");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  const formatTime = (s) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  const resetSetup = () => {
+    setRole("");
+    setExperience("");
+    setCandidateName("");
+    setJd("");
+    clearResume();
+    setView("setup");
+  };
 
   // ─── RENDER: SETUP ────────────────────────────────────────────────────────
   const renderSetup = () => (
     <div style={{ maxWidth: 740 }}>
       <div className="page-header">
-        <div><h1>New Interview</h1><p>Configure the role and candidate details</p></div>
+        <div>
+          <h1>New Interview</h1>
+          <p>Configure the role and candidate details</p>
+        </div>
       </div>
       <div className="mode-toggle">
-        <button className={`mode-btn ${interviewMode === "chat" ? "active" : ""}`} onClick={() => setInterviewMode("chat")}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <button
+          className={`mode-btn ${interviewMode === "chat" ? "active" : ""}`}
+          onClick={() => setInterviewMode("chat")}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+          </svg>
           Chat Interview
         </button>
-        <button className={`mode-btn ${interviewMode === "phone" ? "active" : ""}`} onClick={() => setInterviewMode("phone")}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+        <button
+          className={`mode-btn ${interviewMode === "phone" ? "active" : ""}`}
+          onClick={() => setInterviewMode("phone")}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+          </svg>
           Phone Interview
         </button>
       </div>
@@ -661,77 +926,225 @@ export default function App() {
         <div className="form-grid">
           <div className="form-group">
             <label>Role</label>
-            <select value={role} onChange={e => setRole(e.target.value)}>
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
               <option value="">Select a role</option>
-              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
           </div>
           {role === "Other" && (
             <div className="form-group">
               <label>Custom Role</label>
-              <input type="text" placeholder="Enter custom role" value={customRole} onChange={e => setCustomRole(e.target.value)} />
+              <input
+                type="text"
+                placeholder="Enter custom role"
+                value={customRole}
+                onChange={(e) => setCustomRole(e.target.value)}
+              />
             </div>
           )}
           <div className="form-group">
             <label>Experience Level</label>
-            <select value={experience} onChange={e => setExperience(e.target.value)}>
+            <select
+              value={experience}
+              onChange={(e) => setExperience(e.target.value)}
+            >
               <option value="">Select experience</option>
-              {EXPERIENCE_LEVELS.map(e => <option key={e} value={e}>{e}</option>)}
+              {EXPERIENCE_LEVELS.map((e) => (
+                <option key={e} value={e}>
+                  {e}
+                </option>
+              ))}
             </select>
           </div>
           <div className="form-group">
             <label>Candidate Name</label>
-            <input type="text" placeholder="e.g. Rahul Mehta" value={candidateName} onChange={e => setCandidateName(e.target.value)} />
+            <input
+              type="text"
+              placeholder="e.g. Rahul Mehta"
+              value={candidateName}
+              onChange={(e) => setCandidateName(e.target.value)}
+            />
           </div>
           {interviewMode === "phone" && (
             <div className="form-group">
               <label>Phone Number</label>
-              <input type="text" placeholder="+61 412 345 678" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
+              <input
+                type="text"
+                placeholder="+61 412 345 678"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
             </div>
           )}
           {interviewMode === "chat" && (
             <div className="form-group">
               <label>Interview Duration</label>
-              <select value={duration} onChange={e => setDuration(Number(e.target.value))}>
-                {DURATION_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+              <select
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+              >
+                {DURATION_OPTIONS.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
               </select>
             </div>
           )}
           <div className="form-group full">
             <label>Job Description (Optional)</label>
-            <textarea placeholder="Paste the job description here..." value={jd} onChange={e => setJd(e.target.value)} style={{ minHeight: 140 }} />
+            <textarea
+              placeholder="Paste the job description here..."
+              value={jd}
+              onChange={(e) => setJd(e.target.value)}
+              style={{ minHeight: 140 }}
+            />
           </div>
           <div className="form-group full">
             <label>Resume (Optional)</label>
             {resumeFile ? (
-              <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"var(--bg)", border:"1px solid var(--border)", borderRadius:8 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M13 2v7h7"/></svg>
-                <span style={{ flex:1, fontSize:13.5 }}>{resumeFile.name}</span>
-                <button type="button" onClick={clearResume} style={{ background:"none", border:"none", color:"var(--text-muted)", cursor:"pointer" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 14px",
+                  background: "var(--bg)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" />
+                  <path d="M13 2v7h7" />
+                </svg>
+                <span style={{ flex: 1, fontSize: 13.5 }}>
+                  {resumeFile.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={clearResume}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
             ) : (
-              <label style={{ display:"block", padding:"32px 14px", background:"var(--bg)", border:"1px dashed var(--border)", borderRadius:8, textAlign:"center", cursor:"pointer" }} onMouseEnter={e => e.currentTarget.style.borderColor="var(--accent)"} onMouseLeave={e => e.currentTarget.style.borderColor="var(--border)"}>
-                <input type="file" accept=".pdf,.doc,.docx,.txt" onChange={handleResumeUpload} style={{ display:"none" }} />
-                <div style={{ color:"var(--text-muted)", fontSize:13 }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ margin:"0 auto 8px", display:"block", opacity:0.5 }}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              <label
+                style={{
+                  display: "block",
+                  padding: "32px 14px",
+                  background: "var(--bg)",
+                  border: "1px dashed var(--border)",
+                  borderRadius: 8,
+                  textAlign: "center",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.borderColor = "var(--accent)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.borderColor = "var(--border)")
+                }
+              >
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={handleResumeUpload}
+                  style={{ display: "none" }}
+                />
+                <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    style={{
+                      margin: "0 auto 8px",
+                      display: "block",
+                      opacity: 0.5,
+                    }}
+                  >
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                  </svg>
                   Click to upload PDF / Word / Text
                 </div>
               </label>
             )}
           </div>
         </div>
-        <div style={{ marginTop:24, display:"flex", justifyContent:"flex-end" }}>
-          <button 
-            className="btn btn-primary" 
-            disabled={!candidateName || (role === "Other" ? !customRole : !role) || !experience} 
-            onClick={interviewMode === "chat" ? startChatInterview : startPhoneInterview}
-          >
-            {interviewMode === "chat"
-              ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5,3 19,12 5,21"/></svg> Start Chat Interview</>
-              : <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> Start Phone Interview</>
+        <div
+          style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}
+        >
+          <button
+            className="btn btn-primary"
+            disabled={
+              !candidateName ||
+              (role === "Other" ? !customRole : !role) ||
+              !experience
             }
+            onClick={
+              interviewMode === "chat"
+                ? startChatInterview
+                : startPhoneInterview
+            }
+          >
+            {interviewMode === "chat" ? (
+              <>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polygon points="5,3 19,12 5,21" />
+                </svg>{" "}
+                Start Chat Interview
+              </>
+            ) : (
+              <>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+                </svg>{" "}
+                Start Phone Interview
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -741,34 +1154,117 @@ export default function App() {
   // ─── RENDER: PHONE WAITING ────────────────────────────────────────────────
   const renderPhoneWaiting = () => {
     const steps = [
-      { label:"Session Created", sub:"Interview context saved", status:"done" },
-      { label: phoneStatus === "waiting" ? "Waiting for Call" : "Call Connected", sub: phoneStatus === "waiting" ? `${candidateName} needs to dial in` : "Sarah is interviewing", status: phoneStatus === "waiting" ? "active" : "done" },
-      { label:"Interview In Progress", sub:"Sarah is conducting the interview", status: phoneStatus === "in_progress" ? "active" : phoneStatus === "completed" ? "done" : "pending" },
-      { label:"Interview Complete", sub:"Transcript received, ready to score", status: phoneStatus === "completed" ? "active" : "pending" },
+      {
+        label: "Session Created",
+        sub: "Interview context saved",
+        status: "done",
+      },
+      {
+        label:
+          phoneStatus === "waiting" ? "Waiting for Call" : "Call Connected",
+        sub:
+          phoneStatus === "waiting"
+            ? `${candidateName} needs to dial in`
+            : "Sarah is interviewing",
+        status: phoneStatus === "waiting" ? "active" : "done",
+      },
+      {
+        label: "Interview In Progress",
+        sub: "Sarah is conducting the interview",
+        status:
+          phoneStatus === "in_progress"
+            ? "active"
+            : phoneStatus === "completed"
+              ? "done"
+              : "pending",
+      },
+      {
+        label: "Interview Complete",
+        sub: "Transcript received, ready to score",
+        status: phoneStatus === "completed" ? "active" : "pending",
+      },
     ];
     return (
       <div className="phone-waiting">
-        <div className="page-header" style={{ textAlign:"center", marginBottom:0 }}>
-          <div><h1>Phone Interview</h1><p>{role} · {experience} · {candidateName}</p></div>
+        <div
+          className="page-header"
+          style={{ textAlign: "center", marginBottom: 0 }}
+        >
+          <div>
+            <h1>Phone Interview</h1>
+            <p>
+              {role} · {experience} · {candidateName}
+            </p>
+          </div>
         </div>
         <div className={`phone-icon-wrap ${phoneStatus.replace("_", "-")}`}>
           <div className="phone-pulse" />
-          {phoneStatus === "completed"
-            ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-            : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-          }
+          {phoneStatus === "completed" ? (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M9 12l2 2 4-4" />
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+            </svg>
+          )}
         </div>
         <div className="phone-status-text">
-          {phoneStatus === "waiting" && <><h2>Waiting for {candidateName}</h2><p>Have {candidateName} call the number below to start.</p></>}
-          {phoneStatus === "in_progress" && <><h2>Interview In Progress</h2><p>Sarah is interviewing {candidateName} right now.</p></>}
-          {phoneStatus === "completed" && <><h2>Interview Complete</h2><p>The call ended and the transcript was received. Ready to score.</p></>}
+          {phoneStatus === "waiting" && (
+            <>
+              <h2>Waiting for {candidateName}</h2>
+              <p>Have {candidateName} call the number below to start.</p>
+            </>
+          )}
+          {phoneStatus === "in_progress" && (
+            <>
+              <h2>Interview In Progress</h2>
+              <p>Sarah is interviewing {candidateName} right now.</p>
+            </>
+          )}
+          {phoneStatus === "completed" && (
+            <>
+              <h2>Interview Complete</h2>
+              <p>
+                The call ended and the transcript was received. Ready to score.
+              </p>
+            </>
+          )}
         </div>
         {phoneStatus !== "completed" && (
           <div className="phone-number-box">
             <div className="pn-label">Candidate should call this number</div>
             <div className="number">{TWILIO_NUMBER}</div>
             <button className="copy-btn" onClick={copyNumber}>
-              {copied ? "✓ Copied!" : <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Number</>}
+              {copied ? (
+                "✓ Copied!"
+              ) : (
+                <>
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" />
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                  </svg>{" "}
+                  Copy Number
+                </>
+              )}
             </button>
           </div>
         )}
@@ -777,20 +1273,48 @@ export default function App() {
             <div key={i}>
               <div className="status-step">
                 <div className="status-step-line">
-                  <div className={`status-dot-wrap ${step.status}`}>{step.status === "done" ? "✓" : i + 1}</div>
-                  {i < steps.length - 1 && <div className={`status-connector ${step.status === "done" ? "done" : ""}`} />}
+                  <div className={`status-dot-wrap ${step.status}`}>
+                    {step.status === "done" ? "✓" : i + 1}
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div
+                      className={`status-connector ${step.status === "done" ? "done" : ""}`}
+                    />
+                  )}
                 </div>
                 <div className="status-step-content">
-                  <div className={`step-label ${step.status}`}>{step.label}</div>
+                  <div className={`step-label ${step.status}`}>
+                    {step.label}
+                  </div>
                   <div className="step-sub">{step.sub}</div>
                 </div>
               </div>
             </div>
           ))}
         </div>
-        <div style={{ display:"flex", gap:10 }}>
-          {phoneStatus === "completed" && <button className="btn btn-primary" onClick={() => scoreInterview("phone")}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Score Interview</button>}
-          <button className="btn btn-secondary" onClick={resetSetup}>Back to Setup</button>
+        <div style={{ display: "flex", gap: 10 }}>
+          {phoneStatus === "completed" && (
+            <button
+              className="btn btn-primary"
+              onClick={() => scoreInterview("phone")}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M9 12l2 2 4-4" />
+                <circle cx="12" cy="12" r="10" />
+              </svg>{" "}
+              Score Interview
+            </button>
+          )}
+          <button className="btn btn-secondary" onClick={resetSetup}>
+            Back to Setup
+          </button>
         </div>
       </div>
     );
@@ -798,50 +1322,163 @@ export default function App() {
 
   // ─── RENDER: CHAT INTERVIEW ───────────────────────────────────────────────
   const renderInterview = () => (
-    <div style={{ height:"100%" }}>
-      <div className="page-header" style={{ marginBottom:14 }}>
-        <div><h1>Live Interview</h1><p>{role} · {experience} · {candidateName}</p></div>
-        {interviewDone && <button className="btn btn-primary" onClick={() => scoreInterview("chat")}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Score Interview</button>}
+    <div style={{ height: "100%" }}>
+      <div className="page-header" style={{ marginBottom: 14 }}>
+        <div>
+          <h1>Live Interview</h1>
+          <p>
+            {role} · {experience} · {candidateName}
+          </p>
+        </div>
+        {interviewDone && (
+          <button
+            className="btn btn-primary"
+            onClick={() => scoreInterview("chat")}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M9 12l2 2 4-4" />
+              <circle cx="12" cy="12" r="10" />
+            </svg>{" "}
+            Score Interview
+          </button>
+        )}
       </div>
       <div className="interview-layout">
         <div className="chat-container">
           <div className="chat-top-bar">
             <div className="interviewer-info">
               <div className="avatar avatar-ai">S</div>
-              <div><div className="name">Sarah</div><div className="role-label">Interview Coordinator</div></div>
+              <div>
+                <div className="name">Sarah</div>
+                <div className="role-label">Interview Coordinator</div>
+              </div>
             </div>
-            <div className={`timer-badge ${timeLeft <= 180 ? "warning" : ""}`}><span className="timer-dot" />{formatTime(timeLeft)}</div>
+            <div className={`timer-badge ${timeLeft <= 180 ? "warning" : ""}`}>
+              <span className="timer-dot" />
+              {formatTime(timeLeft)}
+            </div>
           </div>
           <div className="chat-messages">
             {messages.map((m, i) => (
               <div key={i} className={`message ${m.role}`}>
-                <div>{m.role === "ai" ? <span className="avatar avatar-ai" style={{ width:28, height:28, fontSize:11 }}>S</span> : <span className="avatar avatar-candidate" style={{ width:28, height:28, fontSize:11 }}>{candidateName[0]?.toUpperCase()}</span>}</div>
+                <div>
+                  {m.role === "ai" ? (
+                    <span
+                      className="avatar avatar-ai"
+                      style={{ width: 28, height: 28, fontSize: 11 }}
+                    >
+                      S
+                    </span>
+                  ) : (
+                    <span
+                      className="avatar avatar-candidate"
+                      style={{ width: 28, height: 28, fontSize: 11 }}
+                    >
+                      {candidateName[0]?.toUpperCase()}
+                    </span>
+                  )}
+                </div>
                 <div className="message-content">
                   <div className="message-bubble">{m.text}</div>
-                  <div className="message-time">{m.time.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })}</div>
+                  <div className="message-time">
+                    {m.time.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
                 </div>
               </div>
             ))}
-            {isTyping && <div className="typing-wrap"><span className="avatar avatar-ai" style={{ width:28, height:28, fontSize:11 }}>S</span><div className="typing-bubble"><div className="typing-indicator"><span/><span/><span/></div></div></div>}
+            {isTyping && (
+              <div className="typing-wrap">
+                <span
+                  className="avatar avatar-ai"
+                  style={{ width: 28, height: 28, fontSize: 11 }}
+                >
+                  S
+                </span>
+                <div className="typing-bubble">
+                  <div className="typing-indicator">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
           <div className="chat-input-area">
-            <input ref={inputRef} type="text" placeholder={interviewDone ? "Interview completed" : "Type your response..."} value={inputVal} disabled={interviewDone || isTyping} onChange={e => setInputVal(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} />
-            <button className="btn btn-primary" disabled={interviewDone || !inputVal.trim() || isTyping} onClick={sendMessage}>Send</button>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder={
+                interviewDone ? "Interview completed" : "Type your response..."
+              }
+              value={inputVal}
+              disabled={interviewDone || isTyping}
+              onChange={(e) => setInputVal(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            />
+            <button
+              className="btn btn-primary"
+              disabled={interviewDone || !inputVal.trim() || isTyping}
+              onClick={sendMessage}
+            >
+              Send
+            </button>
           </div>
         </div>
         <div className="side-panel">
           <div className="card">
-            <div className="card-header"><h3>Topics</h3><span style={{ fontSize:11.5, color:"var(--text-muted)" }}>{topicHistory.length}/{TOPIC_AREAS.length}</span></div>
+            <div className="card-header">
+              <h3>Topics</h3>
+              <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
+                {topicHistory.length}/{TOPIC_AREAS.length}
+              </span>
+            </div>
             {TOPIC_AREAS.map((topic, i) => {
               const isDone = topicHistory.includes(i) && currentTopic > i;
               const isActive = currentTopic === i;
-              return <div key={i} className="topic-item"><div className={`topic-badge ${isDone?"done":isActive?"active":"pending"}`}>{isDone?"✓":i+1}</div><div className={`topic-label ${isActive?"active-label":""}`}>{topic}</div></div>;
+              return (
+                <div key={i} className="topic-item">
+                  <div
+                    className={`topic-badge ${isDone ? "done" : isActive ? "active" : "pending"}`}
+                  >
+                    {isDone ? "✓" : i + 1}
+                  </div>
+                  <div
+                    className={`topic-label ${isActive ? "active-label" : ""}`}
+                  >
+                    {topic}
+                  </div>
+                </div>
+              );
             })}
           </div>
           <div className="card">
-            <div className="card-header"><h3>Details</h3></div>
-            {[["Role",role],["Level",experience],["Candidate",candidateName],["Duration",`${duration} mins`],["Mode","Chat"]].map(([k,v]) => <div key={k} className="detail-row"><span>{k}</span><span>{v}</span></div>)}
+            <div className="card-header">
+              <h3>Details</h3>
+            </div>
+            {[
+              ["Role", role],
+              ["Level", experience],
+              ["Candidate", candidateName],
+              ["Duration", `${duration} mins`],
+              ["Mode", "Chat"],
+            ].map(([k, v]) => (
+              <div key={k} className="detail-row">
+                <span>{k}</span>
+                <span>{v}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -852,61 +1489,189 @@ export default function App() {
   const renderResults = () => {
     const s = currentCandidate?.scores;
     if (!s) return null;
-    const params = [{ key:"technical", label:"Technical Knowledge" },{ key:"communication", label:"Communication" },{ key:"relevance", label:"JD Relevance" },{ key:"problemSolving", label:"Problem Solving" },{ key:"confidence", label:"Confidence" }];
+    const params = [
+      { key: "technical", label: "Technical Knowledge" },
+      { key: "communication", label: "Communication" },
+      { key: "relevance", label: "JD Relevance" },
+      { key: "problemSolving", label: "Problem Solving" },
+      { key: "confidence", label: "Confidence" },
+    ];
     const pct = (currentCandidate.overall / 10) * 100;
     const circumference = 2 * Math.PI * 54;
     return (
       <div>
         <div className="page-header">
-          <div><h1>{currentCandidate.name}</h1><p>{currentCandidate.role} · {currentCandidate.experience} · {currentCandidate.mode === "phone" ? "📞 Phone" : "💬 Chat"}</p></div>
-          <div style={{ display:"flex", gap:8 }}>
-            <button className="btn btn-secondary" onClick={resetSetup}>New Interview</button>
-            <button className="btn btn-secondary" onClick={() => setView("candidates")}>All Candidates</button>
+          <div>
+            <h1>{currentCandidate.name}</h1>
+            <p>
+              {currentCandidate.role} · {currentCandidate.experience} ·{" "}
+              {currentCandidate.mode === "phone" ? "📞 Phone" : "💬 Chat"}
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-secondary" onClick={resetSetup}>
+              New Interview
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setView("candidates")}
+            >
+              All Candidates
+            </button>
           </div>
         </div>
         <div className="results-layout">
-          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div className="score-hero">
               <div className="score-circle">
-                <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="none" stroke="var(--border)" strokeWidth="8"/><circle cx="60" cy="60" r="54" fill="none" stroke="url(#sg)" strokeWidth="8" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference*(1-pct/100)}/><defs><linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="var(--accent)"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient></defs></svg>
-                <div className="score-num">{currentCandidate.overall}</div><div className="score-label">/ 10</div>
+                <svg viewBox="0 0 120 120">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    fill="none"
+                    stroke="var(--border)"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    fill="none"
+                    stroke="url(#sg)"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference * (1 - pct / 100)}
+                  />
+                  <defs>
+                    <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="var(--accent)" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="score-num">{currentCandidate.overall}</div>
+                <div className="score-label">/ 10</div>
               </div>
             </div>
             <div className="card">
-              <div className="card-header"><h3>Score Breakdown</h3></div>
-              <div className="score-breakdown">{params.map(p => <div key={p.key} className="score-bar-item"><div className="bar-label"><span>{p.label}</span><span>{s[p.key]}/10</span></div><div className="score-bar-track"><div className="score-bar-fill" style={{ width:`${(s[p.key]/10)*100}%` }}/></div></div>)}</div>
+              <div className="card-header">
+                <h3>Score Breakdown</h3>
+              </div>
+              <div className="score-breakdown">
+                {params.map((p) => (
+                  <div key={p.key} className="score-bar-item">
+                    <div className="bar-label">
+                      <span>{p.label}</span>
+                      <span>{s[p.key]}/10</span>
+                    </div>
+                    <div className="score-bar-track">
+                      <div
+                        className="score-bar-fill"
+                        style={{ width: `${(s[p.key] / 10) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="commentary-box"><h4>Summary</h4><p>{s.summary}</p></div>
-            <div className="commentary-box"><h4>Strengths</h4><div className="tag-row">{s.strengths?.map((st,i) => <span key={i} className="tag strength">{st}</span>)}</div></div>
-            <div className="commentary-box"><h4>Areas for Improvement</h4><div className="tag-row">{s.improvements?.map((im,i) => <span key={i} className="tag improvement">{im}</span>)}</div></div>
+            <div className="commentary-box">
+              <h4>Summary</h4>
+              <p>{s.summary}</p>
+            </div>
+            <div className="commentary-box">
+              <h4>Strengths</h4>
+              <div className="tag-row">
+                {s.strengths?.map((st, i) => (
+                  <span key={i} className="tag strength">
+                    {st}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="commentary-box">
+              <h4>Areas for Improvement</h4>
+              <div className="tag-row">
+                {s.improvements?.map((im, i) => (
+                  <span key={i} className="tag improvement">
+                    {im}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-            <div className="card" style={{ flex:1 }}>
-              <div className="card-header"><h3>Interview Transcript</h3></div>
-              <div style={{ maxHeight:600, overflowY:"auto", paddingRight:8 }}>
-                {currentCandidate.transcript && currentCandidate.transcript.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div className="card" style={{ flex: 1 }}>
+              <div className="card-header">
+                <h3>Interview Transcript</h3>
+              </div>
+              <div
+                style={{ maxHeight: 600, overflowY: "auto", paddingRight: 8 }}
+              >
+                {currentCandidate.transcript &&
+                currentCandidate.transcript.length > 0 ? (
                   currentCandidate.transcript.map((msg, i) => (
-                    <div key={i} style={{ marginBottom:16, display:"flex", gap:10 }}>
-                      <div style={{ 
-                        width:32, height:32, borderRadius:"50%", flexShrink:0,
-                        background: msg.role === "ai" ? "linear-gradient(135deg, var(--accent), #8b5cf6)" : "linear-gradient(135deg, var(--green), #059669)",
-                        display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:12, fontWeight:700
-                      }}>
-                        {msg.role === "ai" ? "S" : currentCandidate.name[0]?.toUpperCase()}
+                    <div
+                      key={i}
+                      style={{ marginBottom: 16, display: "flex", gap: 10 }}
+                    >
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          flexShrink: 0,
+                          background:
+                            msg.role === "ai"
+                              ? "linear-gradient(135deg, var(--accent), #8b5cf6)"
+                              : "linear-gradient(135deg, var(--green), #059669)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#fff",
+                          fontSize: 12,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {msg.role === "ai"
+                          ? "S"
+                          : currentCandidate.name[0]?.toUpperCase()}
                       </div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:600 }}>
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            marginBottom: 4,
+                            fontWeight: 600,
+                          }}
+                        >
                           {msg.role === "ai" ? "Sarah" : currentCandidate.name}
                         </div>
-                        <div style={{ background:"var(--surface-raised)", padding:"10px 12px", borderRadius:10, fontSize:13.5, lineHeight:1.6 }}>
+                        <div
+                          style={{
+                            background: "var(--surface-raised)",
+                            padding: "10px 12px",
+                            borderRadius: 10,
+                            fontSize: 13.5,
+                            lineHeight: 1.6,
+                          }}
+                        >
                           {msg.text}
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div style={{ textAlign:"center", padding:40, color:"var(--text-muted)" }}>
-                    <div style={{ fontSize:32, marginBottom:8 }}>💬</div>
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: 40,
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
                     <p>Transcript not available</p>
                   </div>
                 )}
@@ -921,68 +1686,260 @@ export default function App() {
   // ─── RENDER: CANDIDATES ───────────────────────────────────────────────────
   const renderCandidates = () => {
     // Filter and search logic
-    let filtered = candidates.filter(c => {
-      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
+    let filtered = candidates.filter((c) => {
+      const matchesSearch = c.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
       const matchesRole = !filterRole || c.role === filterRole;
-      const matchesScore = c.overall >= filterMinScore && c.overall <= filterMaxScore;
+      const matchesScore =
+        c.overall >= filterMinScore && c.overall <= filterMaxScore;
       return matchesSearch && matchesRole && matchesScore;
     });
 
     // Sort logic
     if (sortBy === "score") filtered.sort((a, b) => b.overall - a.overall);
-    else if (sortBy === "name") filtered.sort((a, b) => a.name.localeCompare(b.name));
-    else filtered.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt)); // date
+    else if (sortBy === "name")
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    else
+      filtered.sort(
+        (a, b) => new Date(b.completedAt) - new Date(a.completedAt),
+      ); // date
 
-    const uniqueRoles = [...new Set(candidates.map(c => c.role))];
+    const uniqueRoles = [...new Set(candidates.map((c) => c.role))];
 
     return (
       <div style={{ maxWidth: 1000 }}>
         <div className="page-header">
-          <div><h1>All Candidates</h1><p>{filtered.length} of {candidates.length} interviewed</p></div>
-          <button className="btn btn-primary" onClick={resetSetup}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg> New Interview</button>
+          <div>
+            <h1>All Candidates</h1>
+            <p>
+              {filtered.length} of {candidates.length} interviewed
+            </p>
+          </div>
+          <button className="btn btn-primary" onClick={resetSetup}>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>{" "}
+            New Interview
+          </button>
         </div>
 
         {/* Search & Filter Bar */}
         <div className="card" style={{ marginBottom: 20, padding: 18 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
-            <input type="text" placeholder="Search by name..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 13.5 }} />
-            <select value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 13.5, appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f99' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr 1fr",
+              gap: 14,
+              marginBottom: 14,
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: "10px 12px",
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                color: "var(--text)",
+                fontFamily: "inherit",
+                fontSize: 13.5,
+              }}
+            />
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              style={{
+                padding: "10px 12px",
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                color: "var(--text)",
+                fontFamily: "inherit",
+                fontSize: 13.5,
+                appearance: "none",
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f99' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                paddingRight: 32,
+              }}
+            >
               <option value="">All Roles</option>
-              {uniqueRoles.map(r => <option key={r} value={r}>{r}</option>)}
+              {uniqueRoles.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input type="number" min="0" max="10" value={filterMinScore} onChange={e => setFilterMinScore(Number(e.target.value))} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 12, flex: 1 }} placeholder="Min" />
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value={filterMinScore}
+                onChange={(e) => setFilterMinScore(Number(e.target.value))}
+                style={{
+                  padding: "10px 12px",
+                  background: "var(--bg)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  color: "var(--text)",
+                  fontFamily: "inherit",
+                  fontSize: 12,
+                  flex: 1,
+                }}
+                placeholder="Min"
+              />
               <span style={{ color: "var(--text-muted)" }}>-</span>
-              <input type="number" min="0" max="10" value={filterMaxScore} onChange={e => setFilterMaxScore(Number(e.target.value))} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 12, flex: 1 }} placeholder="Max" />
+              <input
+                type="number"
+                min="0"
+                max="10"
+                value={filterMaxScore}
+                onChange={(e) => setFilterMaxScore(Number(e.target.value))}
+                style={{
+                  padding: "10px 12px",
+                  background: "var(--bg)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  color: "var(--text)",
+                  fontFamily: "inherit",
+                  fontSize: 12,
+                  flex: 1,
+                }}
+                placeholder="Max"
+              />
             </div>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontFamily: "inherit", fontSize: 13.5, appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f99' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: 32 }}>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{
+                padding: "10px 12px",
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                color: "var(--text)",
+                fontFamily: "inherit",
+                fontSize: 13.5,
+                appearance: "none",
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7f99' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                paddingRight: 32,
+              }}
+            >
               <option value="date">Sort: Recent</option>
               <option value="score">Sort: Score</option>
               <option value="name">Sort: Name</option>
             </select>
           </div>
-          {(searchQuery || filterRole || filterMinScore > 0 || filterMaxScore < 10) && (
-            <button onClick={() => { setSearchQuery(""); setFilterRole(""); setFilterMinScore(0); setFilterMaxScore(10); }} style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 12.5, fontWeight: 500 }}>Clear filters</button>
+          {(searchQuery ||
+            filterRole ||
+            filterMinScore > 0 ||
+            filterMaxScore < 10) && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setFilterRole("");
+                setFilterMinScore(0);
+                setFilterMaxScore(10);
+              }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--accent)",
+                cursor: "pointer",
+                fontSize: 12.5,
+                fontWeight: 500,
+              }}
+            >
+              Clear filters
+            </button>
           )}
         </div>
 
         {/* Candidates Table */}
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           {filtered.length === 0 ? (
-            <div style={{ padding: 48, textAlign: "center", color: "var(--text-muted)" }}><div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div><p>{candidates.length === 0 ? "No candidates yet." : "No candidates match your filters."}</p></div>
+            <div
+              style={{
+                padding: 48,
+                textAlign: "center",
+                color: "var(--text-muted)",
+              }}
+            >
+              <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
+              <p>
+                {candidates.length === 0
+                  ? "No candidates yet."
+                  : "No candidates match your filters."}
+              </p>
+            </div>
           ) : (
             <table className="candidates-table">
-              <thead><tr><th>Candidate</th><th>Role</th><th>Level</th><th>Mode</th><th>Score</th><th>Status</th></tr></thead>
-              <tbody>{filtered.map(c => (
-                <tr key={c.id} onClick={() => { setCurrentCandidate(c); setView("results"); }}>
-                  <td style={{ fontWeight: 500 }}>{c.name}</td>
-                  <td style={{ color: "var(--text-muted)" }}>{c.role}</td>
-                  <td style={{ color: "var(--text-muted)" }}>{c.experience}</td>
-                  <td><span className={`status-pill ${c.mode === "phone" ? "phone" : "chat"}`}><span className="status-dot"/>{c.mode === "phone" ? "📞 Phone" : "💬 Chat"}</span></td>
-                  <td><div className="mini-score"><span className="val">{c.overall}</span><div className="mini-bar-track"><div className="mini-bar-fill" style={{ width: `${(c.overall / 10) * 100}%` }} /></div></div></td>
-                  <td><span className="status-pill completed"><span className="status-dot"/> Completed</span></td>
+              <thead>
+                <tr>
+                  <th>Candidate</th>
+                  <th>Role</th>
+                  <th>Level</th>
+                  <th>Mode</th>
+                  <th>Score</th>
+                  <th>Status</th>
                 </tr>
-              ))}</tbody>
+              </thead>
+              <tbody>
+                {filtered.map((c) => (
+                  <tr
+                    key={c.id}
+                    onClick={() => {
+                      setCurrentCandidate(c);
+                      setView("results");
+                    }}
+                  >
+                    <td style={{ fontWeight: 500 }}>{c.name}</td>
+                    <td style={{ color: "var(--text-muted)" }}>{c.role}</td>
+                    <td style={{ color: "var(--text-muted)" }}>
+                      {c.experience}
+                    </td>
+                    <td>
+                      <span
+                        className={`status-pill ${c.mode === "phone" ? "phone" : "chat"}`}
+                      >
+                        <span className="status-dot" />
+                        {c.mode === "phone" ? "📞 Phone" : "💬 Chat"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="mini-score">
+                        <span className="val">{c.overall}</span>
+                        <div className="mini-bar-track">
+                          <div
+                            className="mini-bar-fill"
+                            style={{ width: `${(c.overall / 10) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="status-pill completed">
+                        <span className="status-dot" /> Completed
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           )}
         </div>
@@ -992,18 +1949,66 @@ export default function App() {
 
   // ─── NAV ──────────────────────────────────────────────────────────────────
   const navItems = [
-    { id:"setup", label:"New Interview", icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg> },
-    { id:"candidates", label:"Candidates", icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> },
+    {
+      id: "setup",
+      label: "New Interview",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      ),
+    },
+    {
+      id: "candidates",
+      label: "Candidates",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+        </svg>
+      ),
+    },
   ];
-  const getActiveNav = () => ["setup","interview","phone-waiting"].includes(view) ? "setup" : "candidates";
+  const getActiveNav = () =>
+    ["setup", "interview", "phone-waiting"].includes(view)
+      ? "setup"
+      : "candidates";
 
   return (
     <>
       <style>{styles}</style>
       <div className="app-shell">
         <div className="sidebar">
-          <div className="sidebar-logo"><div className="logo-icon">🤖</div><div className="logo-text">Interview<span>AI</span></div></div>
-          <nav className="sidebar-nav">{navItems.map(item => <button key={item.id} className={`nav-item ${getActiveNav()===item.id?"active":""}`} onClick={() => item.id==="setup" ? resetSetup() : setView(item.id)}>{item.icon} {item.label}</button>)}</nav>
+          <div className="sidebar-logo">
+            <div className="logo-icon">🤖</div>
+            <div className="logo-text">
+              Interview<span>AI</span>
+            </div>
+          </div>
+          <nav className="sidebar-nav">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                className={`nav-item ${getActiveNav() === item.id ? "active" : ""}`}
+                onClick={() =>
+                  item.id === "setup" ? resetSetup() : setView(item.id)
+                }
+              >
+                {item.icon} {item.label}
+              </button>
+            ))}
+          </nav>
         </div>
         <div className="main-content">
           {view === "setup" && renderSetup()}
@@ -1013,7 +2018,12 @@ export default function App() {
           {view === "candidates" && renderCandidates()}
         </div>
       </div>
-      {loading && <div className="loading-overlay"><div className="loading-spinner"/><p>{loadingText}</p></div>}
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner" />
+          <p>{loadingText}</p>
+        </div>
+      )}
     </>
   );
 }
