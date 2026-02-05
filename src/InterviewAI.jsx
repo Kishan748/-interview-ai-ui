@@ -1548,7 +1548,7 @@ export default function App() {
           <h1
             style={{ marginBottom: "10px", color: "var(--text)", fontSize: "32px" }}
           >
-            🤖 InterviewAI
+            🦉 OWLWISE
           </h1>
           <p style={{ color: "var(--text-muted)", marginBottom: "30px", fontSize: "14px" }}>
             Enter your access code to continue
@@ -2116,9 +2116,9 @@ export default function App() {
         <div className="app-shell">
           <div className="sidebar">
             <div className="sidebar-logo">
-              <div className="logo-icon">🤖</div>
+              <div className="logo-icon">🦉</div>
               <div className="logo-text">
-                Interview<span>AI</span>
+                OWLWISE
               </div>
             </div>
             <nav className="sidebar-nav">

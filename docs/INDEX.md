@@ -1,4 +1,4 @@
-# 📚 InterviewAI Documentation Index
+# 📚 OWLWISE Documentation Index
 
 **Quick Navigation Guide for All Documentation**
 

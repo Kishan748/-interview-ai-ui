@@ -1,6 +1,6 @@
 # 🎯 Features & Configuration
 
-> **Available interview roles, experience levels, and configurable options for InterviewAI**
+> **Available interview roles, experience levels, and configurable options for OWLWISE**
 
 ---
 

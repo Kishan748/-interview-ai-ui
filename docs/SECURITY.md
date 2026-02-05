@@ -2,13 +2,13 @@
 
 > **Status:** Development Phase
 > **Last Updated:** February 5, 2025
-> **Owner:** InterviewAI Team
+> **Owner:** OWLWISE Team
 
 ---
 
 ## Overview
 
-This document outlines known security issues in the InterviewAI system and provides recommendations for hardening before production use.
+This document outlines known security issues in the OWLWISE system and provides recommendations for hardening before production use.
 
 ---
 
@@ -607,4 +607,4 @@ app.post("/api/post-call", (req, res, next) => {
 
 **Last Updated:** February 5, 2025
 **Next Review:** May 5, 2025
-**Owner:** InterviewAI Security Team
+**Owner:** OWLWISE Security Team

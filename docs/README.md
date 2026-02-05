@@ -1,4 +1,4 @@
-# 🤖 InterviewAI - Documentation Hub
+# 🦉 OWLWISE - Documentation Hub
 
 > **AI-powered interview platform** with phone calls, live transcripts, and automatic scoring using Claude AI
 

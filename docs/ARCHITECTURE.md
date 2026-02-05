@@ -1,6 +1,6 @@
 # 🏗️ Architecture Documentation
 
-> **System design, components, data flow, and technical specifications for InterviewAI**
+> **System design, components, data flow, and technical specifications for OWLWISE**
 
 ---
 

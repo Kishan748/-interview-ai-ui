@@ -1,6 +1,6 @@
 # 💳 Accounts & Services Documentation
 
-> **Service credentials, account status, and cost tracking for InterviewAI**
+> **Service credentials, account status, and cost tracking for OWLWISE**
 
 ⚠️ **IMPORTANT:** This document contains references to sensitive data. Keep actual credentials in:
 - Railway environment variables (backend)
