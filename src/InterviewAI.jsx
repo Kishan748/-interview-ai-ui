@@ -491,6 +491,16 @@ export default function App() {
     if (view === "candidates") loadCandidates();
   }, [view]);
 
+  // Normalize transcript format (ElevenLabs uses 'message', UI expects 'text')
+  const normalizeTranscript = (transcript) => {
+    if (!Array.isArray(transcript)) return [];
+    return transcript.map((msg) => ({
+      role: msg.role === "agent" ? "ai" : msg.role === "candidate" ? "candidate" : "candidate",
+      text: msg.text || msg.message || "",
+      time: msg.time ? new Date(msg.time) : new Date(),
+    }));
+  };
+
   const loadCandidates = async () => {
     try {
       const candidateList = [];
@@ -525,7 +535,7 @@ export default function App() {
                 ? new Date(data.completed_at)
                 : new Date(),
             mode: data.phone_number ? "phone" : "chat",
-            transcript: data.transcript || [],
+            transcript: normalizeTranscript(data.transcript),
             source: "sessions",
           };
           candidateList.push(candidate);
@@ -563,7 +573,7 @@ export default function App() {
                 ? new Date(data.completedAt)
                 : new Date(data.created_at),
               mode: data.mode || "chat",
-              transcript: data.transcript || [],
+              transcript: normalizeTranscript(data.transcript),
               source: "scored_interviews",
             };
             candidateList.push(candidate);
