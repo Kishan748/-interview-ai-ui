@@ -569,20 +569,18 @@ export default function App() {
         );
       }
 
-      // 3. Only include candidates that have scores
-      const scoredCandidates = candidateList.filter(
-        (c) => c.scores && c.overall,
-      );
-      setCandidates(scoredCandidates);
+      // 3. Include all candidates (with or without scores for now)
+      setCandidates(candidateList);
 
       // Update localStorage for quick access
       localStorage.setItem(
         "interviewai_candidates",
-        JSON.stringify(scoredCandidates),
+        JSON.stringify(candidateList),
       );
       console.log(
-        `📊 Total candidates with scores: ${scoredCandidates.length}`,
+        `📊 Total candidates loaded: ${candidateList.length}`,
       );
+      console.log("Candidates:", candidateList);
     } catch (err) {
       console.error("Error loading candidates from Firestore:", err);
       // Fallback to localStorage
