@@ -1,0 +1,40 @@
+/* phone.css — Phone waiting screen and status timeline */
+
+.phone-waiting { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+.phone-icon-wrap { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
+.phone-icon-wrap.waiting { background: var(--amber-dim); }
+.phone-icon-wrap.in-progress { background: var(--green-dim); }
+.phone-icon-wrap.completed { background: var(--green-dim); }
+.phone-icon-wrap svg { width: 36px; height: 36px; }
+.phone-icon-wrap.waiting svg { color: var(--amber); }
+.phone-icon-wrap.in-progress svg { color: var(--green); }
+.phone-icon-wrap.completed svg { color: var(--green); }
+.phone-pulse { position: absolute; inset: -8px; border-radius: 50%; border: 2px solid var(--amber); opacity: 0.3; animation: phonePulse 2s infinite; }
+.phone-icon-wrap.in-progress .phone-pulse { border-color: var(--green); }
+.phone-icon-wrap.completed .phone-pulse { display: none; }
+@keyframes phonePulse { 0% { transform: scale(1); opacity: 0.4; } 100% { transform: scale(1.2); opacity: 0; } }
+.phone-status-text { text-align: center; }
+.phone-status-text h2 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.phone-status-text p { color: var(--text-muted); font-size: 13.5px; line-height: 1.5; }
+.phone-number-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 28px; text-align: center; width: 100%; }
+.phone-number-box .pn-label { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.phone-number-box .number { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; letter-spacing: 1px; color: var(--accent); }
+.copy-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 5px 12px; border-radius: 6px; font-family: inherit; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Status timeline */
+.status-timeline { display: flex; flex-direction: column; gap: 0; width: 100%; max-width: 340px; }
+.status-step { display: flex; gap: 14px; align-items: flex-start; }
+.status-step-line { display: flex; flex-direction: column; align-items: center; }
+.status-dot-wrap { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.status-dot-wrap.done { background: var(--green-dim); color: var(--green); }
+.status-dot-wrap.active { background: var(--accent-glow); color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+.status-dot-wrap.pending { background: var(--surface-raised); color: var(--text-muted); }
+.status-connector { width: 2px; height: 24px; background: var(--border); margin: 2px 0; }
+.status-connector.done { background: var(--green); }
+.status-step-content { padding-top: 4px; }
+.status-step-content .step-label { font-size: 13.5px; font-weight: 500; }
+.status-step-content .step-label.done { color: var(--green); }
+.status-step-content .step-label.active { color: var(--accent); }
+.status-step-content .step-label.pending { color: var(--text-muted); }
+.status-step-content .step-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
