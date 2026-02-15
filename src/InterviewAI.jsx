@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { db } from "./firebase";
 import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { useAuth } from "./AuthContext";
+import AdminPanel from "./AdminPanel";
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const styles = `
@@ -310,7 +312,7 @@ const TOPIC_AREAS = [
   "Wrap Up",
 ];
 const BACKEND_URL = "https://interview-backend-production-0688.up.railway.app";
-const TWILIO_NUMBER = "+61 2 3820 5224";
+const DEFAULT_TWILIO_NUMBER = "+61 2 3820 5224";
 
 // ─── CLAUDE API ───────────────────────────────────────────────────────────────
 async function callClaude(messages, systemPrompt) {
@@ -374,11 +376,7 @@ ONLY valid JSON: { "reply": "<response>", "topicArea": "<one of: Introduction & 
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  // ─── Access Control ───
-  const HARDCODED_ACCESS_CODE = "0001";
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [accessCode, setAccessCode] = useState("");
-  const [codeError, setCodeError] = useState("");
+  const { user, userProfile, companyId, companyData, logout } = useAuth();
 
   const [view, setView] = useState("setup");
   const [candidates, setCandidates] = useState([]);
@@ -428,6 +426,16 @@ export default function App() {
   const phonePollerRef = useRef(null);
   const phoneStatusRef = useRef("waiting");
 
+  // Helper to get auth headers for backend requests
+  const getAuthHeaders = async () => {
+    const headers = { "Content-Type": "application/json" };
+    if (user) {
+      const token = await user.getIdToken();
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
   useEffect(() => {
     timeLeftRef.current = timeLeft;
   }, [timeLeft]);
@@ -471,7 +479,8 @@ export default function App() {
     if (view !== "phone-waiting" || !phoneSessionId) return;
     phonePollerRef.current = setInterval(async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/session/${phoneSessionId}`);
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${BACKEND_URL}/api/session/${phoneSessionId}`, { headers });
         const session = await res.json();
         if (
           session.status === "in_progress" &&
@@ -495,7 +504,7 @@ export default function App() {
   // ── Load completed candidates ──
   useEffect(() => {
     if (view === "candidates") loadCandidates();
-  }, [view]);
+  }, [view, companyId]);
 
   // Normalize transcript format (ElevenLabs uses 'message', UI expects 'text')
   const normalizeTranscript = (transcript) => {
@@ -512,11 +521,15 @@ export default function App() {
       const candidateList = [];
       const seenIds = new Set();
 
-      // 1. Fetch completed sessions from 'sessions' collection
+      // 1. Fetch completed sessions from company-scoped 'sessions' collection
       try {
-        console.log("🔍 Loading from 'sessions' collection...");
+        console.log("Loading from 'sessions' collection...");
+        // Use company-scoped path if companyId is available, otherwise fall back to flat collection
+        const sessionsRef = companyId
+          ? collection(db, "companies", companyId, "sessions")
+          : collection(db, "sessions");
         const q = query(
-          collection(db, "sessions"),
+          sessionsRef,
           where("status", "==", "completed"),
         );
         const snapshot = await getDocs(q);
@@ -554,10 +567,13 @@ export default function App() {
         console.error("❌ Error loading from 'sessions' collection:", err);
       }
 
-      // 2. Fetch scored interviews from 'scored_interviews' collection
+      // 2. Fetch scored interviews from company-scoped 'scored_interviews' collection
       try {
-        console.log("🔍 Loading from 'scored_interviews' collection...");
-        const q = query(collection(db, "scored_interviews"));
+        console.log("Loading from 'scored_interviews' collection...");
+        const scoredRef = companyId
+          ? collection(db, "companies", companyId, "scored_interviews")
+          : collection(db, "scored_interviews");
+        const q = query(scoredRef);
         const snapshot = await getDocs(q);
 
         console.log(
@@ -622,8 +638,11 @@ export default function App() {
 
   const saveCandidate = async (candidate) => {
     try {
-      // Save to Firestore
-      await addDoc(collection(db, "scored_interviews"), {
+      // Save to company-scoped Firestore collection
+      const scoredRef = companyId
+        ? collection(db, "companies", companyId, "scored_interviews")
+        : collection(db, "scored_interviews");
+      await addDoc(scoredRef, {
         ...candidate,
         created_at: new Date().toISOString(),
       });
@@ -638,18 +657,6 @@ export default function App() {
       const updated = [...candidates, candidate];
       setCandidates(updated);
       localStorage.setItem("interviewai_candidates", JSON.stringify(updated));
-    }
-  };
-
-  // ── Access Code Handler ──
-  const handleAccessCodeSubmit = () => {
-    if (accessCode === HARDCODED_ACCESS_CODE) {
-      setIsAuthenticated(true);
-      setAccessCode("");
-      setCodeError("");
-    } else {
-      setCodeError("Invalid access code. Please try again.");
-      setAccessCode("");
     }
   };
 
@@ -790,9 +797,10 @@ export default function App() {
     setLoading(true);
     setLoadingText("Creating interview session...");
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch(`${BACKEND_URL}/api/create-session`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           candidate_name: candidateName,
           role: role === "Other" ? customRole : role,
@@ -800,6 +808,7 @@ export default function App() {
           job_description: jd,
           resume: resumeText,
           phone_number: phoneNumber,
+          companyId,
         }),
       });
       const data = await res.json();
@@ -822,6 +831,7 @@ export default function App() {
         candidate_name: candidateName,
         role: role === "Other" ? customRole : role,
         experience_level: experience,
+        companyId,
       };
 
       // Add mode-specific data
@@ -831,14 +841,15 @@ export default function App() {
         scorePayload.messages = messages;
       }
 
-      // Call backend endpoint for all modes (no CORS!)
+      // Call backend endpoint with auth
       console.log(
         "Calling backend /api/score-interview with payload:",
         scorePayload,
       );
+      const headers = await getAuthHeaders();
       const scoreRes = await fetch(`${BACKEND_URL}/api/score-interview`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(scorePayload),
       });
 
@@ -905,7 +916,8 @@ export default function App() {
   };
 
   const copyNumber = () => {
-    navigator.clipboard.writeText("+61238205224");
+    const num = companyData?.twilioPhoneNumber || DEFAULT_TWILIO_NUMBER;
+    navigator.clipboard.writeText(num.replace(/\s/g, ""));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -1282,7 +1294,7 @@ export default function App() {
         {phoneStatus !== "completed" && (
           <div className="phone-number-box">
             <div className="pn-label">Candidate should call this number</div>
-            <div className="number">{TWILIO_NUMBER}</div>
+            <div className="number">{companyData?.twilioPhoneNumber || DEFAULT_TWILIO_NUMBER}</div>
             <button className="copy-btn" onClick={copyNumber}>
               {copied ? (
                 "✓ Copied!"
@@ -1521,91 +1533,6 @@ export default function App() {
       </div>
     </div>
   );
-
-  // ─── RENDER: ACCESS CODE ──────────────────────────────────────────────────
-  const renderAccessCode = () => {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-          background: "linear-gradient(135deg, var(--accent), #8b5cf6)",
-        }}
-      >
-        <div
-          style={{
-            background: "var(--surface)",
-            padding: "40px",
-            borderRadius: "var(--radius)",
-            border: "1px solid var(--border)",
-            maxWidth: "400px",
-            textAlign: "center",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-          }}
-        >
-          <h1
-            style={{ marginBottom: "10px", color: "var(--text)", fontSize: "32px" }}
-          >
-            🦉 OWLWISE
-          </h1>
-          <p style={{ color: "var(--text-muted)", marginBottom: "30px", fontSize: "14px" }}>
-            Enter your access code to continue
-          </p>
-
-          <input
-            type="password"
-            placeholder="Access Code"
-            value={accessCode}
-            onChange={(e) => {
-              setAccessCode(e.target.value);
-              setCodeError("");
-            }}
-            onKeyDown={(e) => e.key === "Enter" && handleAccessCodeSubmit()}
-            style={{
-              width: "100%",
-              padding: "12px",
-              background: "var(--bg)",
-              border: "1px solid var(--border)",
-              borderRadius: "8px",
-              color: "var(--text)",
-              marginBottom: "15px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-            }}
-          />
-
-          <button
-            onClick={handleAccessCodeSubmit}
-            style={{
-              width: "100%",
-              padding: "12px",
-              background: "var(--accent)",
-              color: "#fff",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "600",
-              marginBottom: codeError ? "15px" : "0",
-              transition: "opacity 0.2s",
-            }}
-            onMouseEnter={(e) => (e.target.style.opacity = "0.9")}
-            onMouseLeave={(e) => (e.target.style.opacity = "1")}
-          >
-            Submit
-          </button>
-
-          {codeError && (
-            <p style={{ color: "#ef4444", marginTop: "15px", fontSize: "14px" }}>
-              ❌ {codeError}
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   // ─── RENDER: RESULTS ──────────────────────────────────────────────────────
   const renderResults = () => {
@@ -2069,6 +1996,191 @@ export default function App() {
     );
   };
 
+  // ─── TEAM MANAGEMENT (for company admins) ─────────────────────────────────
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamForm, setTeamForm] = useState({ name: "", email: "", password: "" });
+  const [teamToast, setTeamToast] = useState("");
+
+  const loadTeamMembers = async () => {
+    setTeamLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${BACKEND_URL}/api/team/members`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setTeamMembers(data);
+      }
+    } catch (err) {
+      console.error("Failed to load team:", err);
+    }
+    setTeamLoading(false);
+  };
+
+  const handleAddTeamMember = async (e) => {
+    e.preventDefault();
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${BACKEND_URL}/api/team/members`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(teamForm),
+      });
+      if (res.ok) {
+        setTeamForm({ name: "", email: "", password: "" });
+        setTeamToast("Team member added successfully!");
+        setTimeout(() => setTeamToast(""), 3000);
+        loadTeamMembers();
+      } else {
+        const err = await res.json();
+        setTeamToast(`Error: ${err.error}`);
+        setTimeout(() => setTeamToast(""), 4000);
+      }
+    } catch (err) {
+      setTeamToast("Failed to add team member");
+      setTimeout(() => setTeamToast(""), 4000);
+    }
+  };
+
+  const handleRemoveTeamMember = async (uid, email) => {
+    if (!confirm(`Remove ${email} from your team?`)) return;
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${BACKEND_URL}/api/team/members/${uid}`, {
+        method: "DELETE",
+        headers,
+      });
+      if (res.ok) {
+        setTeamToast("Member removed");
+        setTimeout(() => setTeamToast(""), 3000);
+        loadTeamMembers();
+      }
+    } catch (err) {
+      setTeamToast("Failed to remove member");
+      setTimeout(() => setTeamToast(""), 4000);
+    }
+  };
+
+  const renderTeam = () => {
+    if (teamMembers.length === 0 && !teamLoading) loadTeamMembers();
+
+    return (
+      <>
+        <div className="page-header">
+          <div>
+            <h1>Team Management</h1>
+            <p>Add or remove team members who can access your company's interviews</p>
+          </div>
+        </div>
+
+        {teamToast && (
+          <div style={{
+            padding: "12px 20px", borderRadius: 8, marginBottom: 20,
+            background: teamToast.startsWith("Error") ? "var(--red-dim)" : "var(--green-dim)",
+            color: teamToast.startsWith("Error") ? "var(--red)" : "var(--green)",
+            fontSize: 13,
+          }}>
+            {teamToast}
+          </div>
+        )}
+
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div className="card-header">
+            <h3>Add Team Member</h3>
+          </div>
+          <form onSubmit={handleAddTeamMember} style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <input
+              placeholder="Full Name"
+              value={teamForm.name}
+              onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+              required
+              style={{
+                flex: 1, minWidth: 150, padding: "9px 12px", background: "var(--bg)",
+                border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)",
+                fontSize: 13, fontFamily: "inherit",
+              }}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={teamForm.email}
+              onChange={(e) => setTeamForm({ ...teamForm, email: e.target.value })}
+              required
+              style={{
+                flex: 1, minWidth: 180, padding: "9px 12px", background: "var(--bg)",
+                border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)",
+                fontSize: 13, fontFamily: "inherit",
+              }}
+            />
+            <input
+              type="password"
+              placeholder="Temporary Password"
+              value={teamForm.password}
+              onChange={(e) => setTeamForm({ ...teamForm, password: e.target.value })}
+              required
+              minLength={6}
+              style={{
+                flex: 1, minWidth: 150, padding: "9px 12px", background: "var(--bg)",
+                border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)",
+                fontSize: 13, fontFamily: "inherit",
+              }}
+            />
+            <button type="submit" className="btn btn-primary">Add Member</button>
+          </form>
+        </div>
+
+        <div className="card">
+          <div className="card-header">
+            <h3>Team Members ({teamMembers.length})</h3>
+            <button className="btn btn-secondary" onClick={loadTeamMembers}>Refresh</button>
+          </div>
+          {teamLoading ? (
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Loading...</p>
+          ) : (
+            <table className="candidates-table" style={{ width: "100%" }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 500 }}>Name</th>
+                  <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 500 }}>Email</th>
+                  <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 500 }}>Role</th>
+                  <th style={{ textAlign: "right", padding: "10px 12px", borderBottom: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 500 }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teamMembers.map((m) => (
+                  <tr key={m.uid}>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)", fontSize: 13 }}>{m.name}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)", fontSize: 13, color: "var(--text-muted)" }}>{m.email}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
+                      <span style={{
+                        padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 500,
+                        background: m.role === "admin" ? "var(--accent-glow)" : "var(--surface-raised)",
+                        color: m.role === "admin" ? "var(--accent)" : "var(--text-muted)",
+                      }}>
+                        {m.role}
+                      </span>
+                    </td>
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)", textAlign: "right" }}>
+                      {m.uid !== user?.uid && (
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => handleRemoveTeamMember(m.uid, m.email)}
+                          style={{ fontSize: 12, padding: "5px 12px", color: "var(--red)" }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </>
+    );
+  };
+
   // ─── NAV ──────────────────────────────────────────────────────────────────
   const navItems = [
     {
@@ -2101,49 +2213,111 @@ export default function App() {
         </svg>
       ),
     },
+    ...(userProfile?.role === "admin" || userProfile?.role === "super_admin"
+      ? [
+          {
+            id: "team",
+            label: "Team",
+            icon: (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+            ),
+          },
+        ]
+      : []),
+    ...(userProfile?.role === "super_admin"
+      ? [
+          {
+            id: "admin",
+            label: "Admin Panel",
+            icon: (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            ),
+          },
+        ]
+      : []),
   ];
-  const getActiveNav = () =>
-    ["setup", "interview", "phone-waiting"].includes(view)
-      ? "setup"
-      : "candidates";
+  const getActiveNav = () => {
+    if (view === "admin") return "admin";
+    if (view === "team") return "team";
+    if (view === "candidates") return "candidates";
+    return "setup";
+  };
 
   return (
     <>
       <style>{styles}</style>
-      {!isAuthenticated ? (
-        renderAccessCode()
-      ) : (
-        <div className="app-shell">
-          <div className="sidebar">
-            <div className="sidebar-logo">
-              <div className="logo-icon">🦉</div>
-              <div className="logo-text">
-                OWLWISE
-              </div>
+      <div className="app-shell">
+        <div className="sidebar">
+          <div className="sidebar-logo">
+            <div className="logo-icon">🦉</div>
+            <div className="logo-text">
+              OWLWISE
             </div>
-            <nav className="sidebar-nav">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  className={`nav-item ${getActiveNav() === item.id ? "active" : ""}`}
-                  onClick={() =>
-                    item.id === "setup" ? resetSetup() : setView(item.id)
-                  }
-                >
-                  {item.icon} {item.label}
-                </button>
-              ))}
-            </nav>
           </div>
-          <div className="main-content">
-            {view === "setup" && renderSetup()}
-            {view === "interview" && renderInterview()}
-            {view === "phone-waiting" && renderPhoneWaiting()}
-            {view === "results" && renderResults()}
-            {view === "candidates" && renderCandidates()}
+          <nav className="sidebar-nav">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                className={`nav-item ${getActiveNav() === item.id ? "active" : ""}`}
+                onClick={() =>
+                  item.id === "setup" ? resetSetup() : setView(item.id)
+                }
+              >
+                {item.icon} {item.label}
+              </button>
+            ))}
+          </nav>
+          <div style={{ marginTop: "auto" }}>
+            {companyData && (
+              <div style={{ padding: "8px 12px", marginBottom: 8 }}>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Company</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>{companyData.name}</div>
+              </div>
+            )}
+            {user && (
+              <div style={{ padding: "8px 12px", marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+              </div>
+            )}
+            <button
+              className="nav-item"
+              onClick={logout}
+              style={{ color: "var(--red)" }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+              </svg>
+              Sign Out
+            </button>
           </div>
         </div>
-      )}
+        <div className="main-content">
+          {view === "setup" && renderSetup()}
+          {view === "interview" && renderInterview()}
+          {view === "phone-waiting" && renderPhoneWaiting()}
+          {view === "results" && renderResults()}
+          {view === "candidates" && renderCandidates()}
+          {view === "team" && renderTeam()}
+          {view === "admin" && <AdminPanel />}
+        </div>
+      </div>
       {loading && (
         <div className="loading-overlay">
           <div className="loading-spinner" />

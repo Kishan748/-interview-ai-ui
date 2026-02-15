@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read their own user-to-company mapping
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // Only admin scripts can write
+    }
+
+    // Company data: only authenticated members can access
+    match /companies/{companyId} {
+      // Company doc itself
+      allow read: if request.auth != null
+        && exists(/databases/$(database)/documents/companies/$(companyId)/members/$(request.auth.uid));
+      allow write: if false; // Only admin scripts
+
+      // All subcollections (sessions, scored_interviews, members)
+      match /{subcollection}/{docId} {
+        allow read: if request.auth != null
+          && exists(/databases/$(database)/documents/companies/$(companyId)/members/$(request.auth.uid));
+        allow create: if request.auth != null
+          && exists(/databases/$(database)/documents/companies/$(companyId)/members/$(request.auth.uid));
+        allow update, delete: if request.auth != null
+          && exists(/databases/$(database)/documents/companies/$(companyId)/members/$(request.auth.uid))
+          && get(/databases/$(database)/documents/companies/$(companyId)/members/$(request.auth.uid)).data.role == "admin";
+      }
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

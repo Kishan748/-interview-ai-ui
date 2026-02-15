@@ -1,14 +1,16 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDCrKHoVgVVfEY3W0Vh9tLqXQ-vj3BM9fY",
+  apiKey: "AIzaSyCFt2XtYV7GcwcS_d2BJNgUWHl-aqRw5OE",
   authDomain: "interview-ai-91b6d.firebaseapp.com",
   projectId: "interview-ai-91b6d",
   storageBucket: "interview-ai-91b6d.firebasestorage.app",
-  messagingSenderId: "783893447747",
-  appId: "1:783893447747:web:f5e5e5c5f5e5e5c5f5e5e5"
+  messagingSenderId: "965896918080",
+  appId: "1:965896918080:web:c93707ead2acca668cfba5"
 };
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
