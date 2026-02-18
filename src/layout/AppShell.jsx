@@ -60,9 +60,9 @@ export default function App() {
     phoneStatusRef.current = phoneStatus;
   }, [phoneStatus]);
 
-  // ── Phone poller ──
+  // ── Phone poller (runs even if user navigates away from phone-waiting) ──
   useEffect(() => {
-    if (view !== "phone-waiting" || !phoneSessionId) return;
+    if (!phoneSessionId || phoneStatusRef.current === "completed") return;
     phonePollerRef.current = setInterval(async () => {
       try {
         const headers = await getAuthHeaders(user);
@@ -85,7 +85,7 @@ export default function App() {
       }
     }, 3000);
     return () => clearInterval(phonePollerRef.current);
-  }, [view, phoneSessionId]);
+  }, [phoneSessionId]);
 
   // ── Auto-score when phone interview completes ──
   useEffect(() => {
