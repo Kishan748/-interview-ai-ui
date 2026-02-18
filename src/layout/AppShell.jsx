@@ -88,7 +88,7 @@ export default function App() {
 
   // ── Load completed candidates ──
   useEffect(() => {
-    if (view === "candidates") loadCandidates();
+    if (view === "candidates" || view === "dashboard") loadCandidates();
   }, [view, companyId]);
 
   // loadCandidates and saveCandidate are now provided by useCandidates hook
