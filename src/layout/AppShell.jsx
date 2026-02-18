@@ -51,6 +51,7 @@ export default function App() {
 
   const phonePollerRef = useRef(null);
   const phoneStatusRef = useRef("waiting");
+  const scoringTriggeredRef = useRef(false);
 
   // getAuthHeaders is now imported from utils/api.js
   // Usage: const headers = await getAuthHeaders(user);
@@ -85,6 +86,14 @@ export default function App() {
     }, 3000);
     return () => clearInterval(phonePollerRef.current);
   }, [view, phoneSessionId]);
+
+  // ── Auto-score when phone interview completes ──
+  useEffect(() => {
+    if (phoneStatus === "completed" && !scoringTriggeredRef.current && phoneSessionId) {
+      scoringTriggeredRef.current = true;
+      scoreInterview();
+    }
+  }, [phoneStatus, phoneSessionId]);
 
   // ── Load completed candidates ──
   useEffect(() => {
@@ -175,6 +184,7 @@ export default function App() {
   const handleSessionCreated = ({ sessionId, name, role: effectiveRole, experience: expLevel }) => {
     setPhoneSessionId(sessionId);
     setPhoneStatus("waiting");
+    scoringTriggeredRef.current = false;
     setCandidateName(name);
     setRole(effectiveRole);
     setExperience(expLevel);

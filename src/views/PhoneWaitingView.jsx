@@ -100,7 +100,7 @@ export default function PhoneWaitingView({
           {phoneStatus === "completed" && (
             <>
               <h2>Interview Complete</h2>
-              <p>The call has ended and the transcript is ready. You can now score the interview.</p>
+              <p>The call has ended and the transcript is ready. Scoring automatically...</p>
             </>
           )}
         </div>
